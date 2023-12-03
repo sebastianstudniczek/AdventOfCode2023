@@ -1,8 +1,8 @@
 ﻿using Runner.Days;
 
-var day1 = new Day1();
+var day = new Day2();
 
-string filePath = $"{Directory.GetCurrentDirectory()}\\Inputs\\{nameof(Day1)}.txt";
+string filePath = $"{Directory.GetCurrentDirectory()}\\Inputs\\{nameof(Day2)}.txt";
 string[] input = File.ReadAllLines(filePath);
-var result = day1.Test(input);
+var result = day.Test(input);
 Console.WriteLine(result);

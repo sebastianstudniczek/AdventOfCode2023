@@ -5,17 +5,6 @@
 // Calibration value - first and last digit (two digit number)
 public class Day1 : IExercise<int>
 {
-    public string[] TestInput => new[]
-    {
-        "two1nine",
-        "eightwothree",
-        "abcone2threexyz",
-        "xtwone3four",
-        "4nineeightseven2",
-        "zoneight234",
-        "7pqrstsixteen"
-    };
-    
     private readonly Dictionary<string, string> _digitByString = new()
     {
         { "one", "1" },
