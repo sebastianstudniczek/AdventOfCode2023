@@ -1,7 +1,9 @@
 ﻿using System.Text;
 
 namespace Runner.Days;
-
+// TODO: Not finished
+// TODO: Think how to refactor it
+// TODO: Check better solution
 public class Day3 : IExercise<int>
 {
     private readonly Coordinate[] _matrixOffsets =
@@ -18,7 +20,7 @@ public class Day3 : IExercise<int>
     
     public int Test(string[] input)
     {
-        List<Coordinate> symbolCoordinates = [];
+        List<Coordinate> gearCoordinates = [];
         List<Coordinate> numberCoordinates = []; // A później podzielić to tam gdzienie ma ciągłości
         List<Coordinate> matchedNumberCoordinates = [];
         for (int i = 0; i < input.Length; i++)
@@ -29,31 +31,46 @@ public class Day3 : IExercise<int>
                 if (char.IsDigit(currentChar))
                 {
                     numberCoordinates.Add(new (j, i));
-                } else if (currentChar != '.')
+                } else if (currentChar == '*')
                 {
-                    symbolCoordinates.Add(new(j, i));
+                    gearCoordinates.Add(new(j, i));
                 }
             }
         }
         
-        foreach (var coordinate in symbolCoordinates)
+        // This check should be enhanced
+        foreach (var coordinate in gearCoordinates)
         {
-            foreach (var offset in _matrixOffsets)
+            int adjacentsCount = 0;
+            List<Coordinate> temp = [];
+            // Clockwise shift
+            for (int i = 1; i < _matrixOffsets.Length; i++)
             {
-                var toCheck = coordinate + offset;
-                bool isAdjacent = numberCoordinates.Contains(toCheck);
-                if (isAdjacent)
+                var current = coordinate + _matrixOffsets[i];
+                var item = input[current.Y][current.X];
+                if (char.IsDigit(item))
                 {
-                    matchedNumberCoordinates.Add(toCheck);
+                    var previous = coordinate + _matrixOffsets[i -1];
+                    //var previousItem = input[]
+                    if ((previous.Y != current.Y) 
+                        || Math.Abs(previous.X - current.X) != 1)
+                    {
+                        adjacentsCount++;
+                        temp.Add(current);
+                    }
                 }
+            }
+
+            if (adjacentsCount == 2) {
+                matchedNumberCoordinates.AddRange(temp);
             }
         }
 
+        // Build matched number
         List<List<Coordinate>> grouped = [];
         List<Coordinate> numberBuilder = [];
         for (int i = 0; i < numberCoordinates.Count; i++)
         {
-            Console.WriteLine("Iteration: " + i);
             if (i > 0 && numberCoordinates[i].X - numberCoordinates[i - 1].X != 1)
             {
                 bool isMatched = numberBuilder.Any(x => matchedNumberCoordinates.Contains(x));
