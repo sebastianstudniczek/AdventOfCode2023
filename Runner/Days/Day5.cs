@@ -1,12 +1,22 @@
-﻿namespace Runner.Days;
+﻿using System.Collections.Concurrent;
 
-internal class Day5 : IExercise<uint>
+namespace Runner.Days;
+
+// TODO: How to speed this up?
+internal class Day5
 {
     public uint Test(string[] input)
     {
-        string[] seeds = input[0]
+        string[] seedsLine = input[0]
             .Split(':', StringSplitOptions.RemoveEmptyEntries)[1]
             .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        List<List<uint>> seeds = [];
+        for (int i = 0; i < seedsLine.Length; i += 2)
+        {
+            var seedsRange = Range(uint.Parse(seedsLine[i]), uint.Parse(seedsLine[i + 1]));
+            seeds.Add(seedsRange.ToList());
+        }
 
         List<List<GardenMap>> maps = [];
         List<GardenMap> tempMap = [];
@@ -37,11 +47,23 @@ internal class Day5 : IExercise<uint>
             tempMap.Add(localMap);
         }
 
-
-        uint minLocation = int.MaxValue;
-        for (int i = 0; i < seeds.Length; i++)
+        ConcurrentBag<uint> locations = [];
+        var chunked = seeds.SelectMany(x => x).Chunk(10_000);
+        Parallel.ForEach(chunked, (seed) =>
         {
-            uint init = uint.Parse(seeds[i]);
+            var result = GetLocation(seed, maps);
+            locations.Add(result);
+        });
+
+        return locations.Min();
+    }
+
+    private static uint GetLocation(IList<uint> seedsChunk, IEnumerable<List<GardenMap>> maps)
+    {
+        uint minLocation = uint.MaxValue;
+        for (int i = 0; i < seedsChunk.Count; i++)
+        {
+            uint init = seedsChunk[i];
             foreach (var filter in maps)
             {
                 var fit = filter.Find(x => x.SrcRangeStart <= init && x.SrcRangeStart + x.RangeLength > init);
@@ -59,8 +81,19 @@ internal class Day5 : IExercise<uint>
             }
         }
 
-
         return minLocation;
+    }
+
+    private static IEnumerable<uint> Range(uint start, uint count)
+    {
+        List<uint> result = [];
+        uint index = start;
+        while (index < start + count)
+        {
+            result.Add(index++);
+        }
+
+        return result;
     }
 
     private sealed record GardenMap(uint DestRangeStart, uint SrcRangeStart, uint RangeLength);
