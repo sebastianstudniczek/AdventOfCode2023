@@ -1,36 +1,31 @@
 ﻿namespace Runner.Days;
 
-internal class Day6 : IExercise<int>
+internal class Day6 : IExercise<long>
 {
-    public int Test(string[] input)
+    public long Test(string[] input)
     {
-        var getValues = (string input) => input
-            .Split(':', StringSplitOptions.TrimEntries)[1]
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-            .Select(int.Parse);
-
-        var times = getValues(input[0]).ToArray();
-        var distances = getValues(input[1]).ToArray();
-
-        List<int> ways = [];
-        int localCount = 0;
-        for (int i = 0; i < times.Length; i++)
+        var getValues = (string input) =>
         {
-            int currentRecord = distances[i];
-            for (int j = 0; j < times[i]; j++)
-            {
-                int currentDistance = (times[i] - j) * j;
-                if (currentDistance > currentRecord)
-                {
-                    localCount++;
-                }
-            }
+            var temp = input
+                .Split(':', StringSplitOptions.TrimEntries)[1]
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-            ways.Add(localCount);
-            localCount = 0;
+            return long.Parse(string.Concat(temp));
+        };
+
+        long time = getValues(input[0]);
+        long recordDistance = getValues(input[1]);
+
+        long waysCount = 0;
+        for (long j = 0; j < time; j++)
+        {
+            long currentDistance = (time - j) * j;
+            if (currentDistance > recordDistance)
+            {
+                waysCount++;
+            }
         }
 
-
-        return ways.Aggregate((cur, x) => cur * x);
+        return waysCount;
     }
 }
