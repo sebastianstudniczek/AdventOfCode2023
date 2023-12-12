@@ -2,15 +2,16 @@
 
 internal class Day7 : IExercise<int>
 {
+    private const char _Joker = 'J';
+
     public int Test(string[] input)
     {
         var comparer = new HandComparer();
         var sortedHands = input
-            .Select(x => new
-            {
-                Hand = x.Split(' ')[0],
-                Bid = int.Parse(x.Split(' ')[1])
-            })
+            .Select(x => new HandBid(
+                Hand: x.Split(' ')[0],
+                Bid: int.Parse(x.Split(' ')[1]))
+            )
             .OrderBy(x => x.Hand, comparer)
             .ToList();
 
@@ -73,29 +74,12 @@ internal class Day7 : IExercise<int>
                 })
                 .ToDictionary(x => x.Key, x => x.Count);
 
-            if (TypeChecks.IsFiveOfAKind(grouped))
+            foreach ((CheckType check, int strength) in TypeChecks.All)
             {
-                return 7;
-            }
-            else if (TypeChecks.IsFourOfAKind(grouped))
-            {
-                return 6;
-            }
-            else if (TypeChecks.IsFullHouse(grouped))
-            {
-                return 5;
-            }
-            else if (TypeChecks.IsThreeOfAKind(grouped))
-            {
-                return 4;
-            }
-            else if (TypeChecks.IsTwoPair(grouped))
-            {
-                return 3;
-            }
-            else if (TypeChecks.IsOnePair(grouped))
-            {
-                return 2;
+                if (check(grouped))
+                {
+                    return strength;
+                }
             }
 
             return 1;
@@ -112,7 +96,8 @@ internal class Day7 : IExercise<int>
             if (leftStrength < rightStrength)
             {
                 return -1;
-            } else if (leftStrength > rightStrength)
+            }
+            else if (leftStrength > rightStrength)
             {
                 return 1;
             }
@@ -122,34 +107,54 @@ internal class Day7 : IExercise<int>
 
         private static int GetStrength(char x) => x switch
         {
-             >= '2' and <= '9' => int.Parse(x.ToString()) - 1,
+            _Joker => 0,
+            >= '2' and <= '9' => int.Parse(x.ToString()) - 1,
             'T' => 9,
-            'J' => 10,
-            'Q' => 11,
-            'K' => 12,
-            'A' => 13,
-            _ => 0
+            'Q' => 10,
+            'K' => 11,
+            'A' => 12,
+            _ => -1
         };
     }
 
-    private static class TypeChecks
+    private delegate bool CheckType(IDictionary<char, int> input);
+
+    private static class TypeChecks 
     {
-        public static bool IsFiveOfAKind(IDictionary<char, int> input) => 
-            input.Count == 1;
+        public static readonly IEnumerable<(CheckType, int)> All = 
+            [
+                (IsFiveOfAKind, 7),
+                (IsFourOfAKind, 6),
+                (IsFullHouse, 5),
+                (IsThreeOfAKind, 4),
+                (IsTwoPair, 3),
+                (IsOnePair, 2)
+            ];
 
-        public static bool IsFourOfAKind(IDictionary<char, int> input) =>
-            input.Count == 2 && input.Any(x => x.Value == 4);
+        private static bool IsFiveOfAKind(IDictionary<char, int> input) => 
+                input.Count == 1 
+            || (input.ContainsKey(_Joker) && input.Count == 2);
 
-        public static bool IsFullHouse(IDictionary<char, int> input) =>
-            input.Count == 2 && input.Any(x => x.Value == 3);
+        private static bool IsFourOfAKind(IDictionary<char, int> input) =>
+               (input.Count == 2 && input.Any(x => x.Value == 4))
+            || (input.TryGetValue(_Joker, out int joker) && input.Count == 3 && (joker == 2 || input.Any(x => x.Value == 3)));
 
-        public static bool IsThreeOfAKind(IDictionary<char, int> input) =>
-            input.Count == 3 && input.Any(x => x.Value == 3);
+        private static bool IsFullHouse(IDictionary<char, int> input) =>
+               (input.Count == 2 && input.Any(x => x.Value == 3) )
+            || (input.ContainsKey(_Joker) && input.Count == 3);
 
-        public static bool IsTwoPair(IDictionary<char, int> input) =>
-            input.Count == 3 && input.Count(x => x.Value == 2) == 2;
+        private static bool IsThreeOfAKind(IDictionary<char, int> input) =>
+               (input.Count == 3 && input.Any(x => x.Value == 3))
+            || (input.ContainsKey(_Joker) && input.Count == 4);
 
-        public static bool IsOnePair(IDictionary<char, int> input) =>
-            input.Count == 4 && input.Count(x => x.Value == 2) == 1;
+        private static bool IsTwoPair(IDictionary<char, int> input) => 
+               (input.Count == 3 && input.Count(x => x.Value == 2) == 2)
+            || (input.ContainsKey(_Joker) && input.Count == 4);
+
+        private static bool IsOnePair(IDictionary<char, int> input) =>
+                (input.Count == 4 && input.Count(x => x.Value == 2) == 1)
+            || (input.ContainsKey(_Joker) && input.Count == 5);
     }
+
+    private sealed record HandBid(string Hand, int Bid);
 }
