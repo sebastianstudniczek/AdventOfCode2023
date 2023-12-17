@@ -3,21 +3,22 @@ using System.Reflection;
 
 namespace Runner.Days;
 
+// TEMP
 public class Day10 : IExercise<int>
 {
     private const char _Start = 'S';
     private readonly Dictionary<char, Vector2[]> _offsetsBySign = new() {
         { Pipe.NS, [ Direction.North, Direction.South ] },
         { Pipe.WE, [ Direction.West, Direction.East ] },
-        { Pipe.SW, [ Direction.West, Direction.South ] },
+        { Pipe.SW, [ Direction.East, Direction.North ] },
         { Pipe.NW, [ Direction.South, Direction.East ] },
-        { Pipe.NE, [ Direction.East, Direction.North ] },
+        { Pipe.NE, [ Direction.East, Direction.South ] },
         { Pipe.SE, [ Direction.North, Direction.West ] }
     };
 
     public int Test(string[] input)
     {
-        Vector2 startingPoint = new(-1, -1);
+        Vector2 startingPoint = new();
         // Find starting point
         bool foundStart = false;
         for (int i = 0; i < input.Length; i++)
@@ -39,7 +40,7 @@ public class Day10 : IExercise<int>
         }
 
         var previous = startingPoint;
-        char sign;
+        char sign = ' ';
         Vector2 current = new();
         foreach (var offset in Direction.GetOffsets())
         {
@@ -49,7 +50,7 @@ public class Day10 : IExercise<int>
                 continue;
             }
             sign = input[(int)current.Y][(int)current.X];
-            if (Pipe.GetAll().Contains(sign) && _offsetsBySign[sign].Contains(offset))
+            if (sign.In(Pipe.GetAll()) && offset.In(_offsetsBySign[sign]))
             {
                 break;
             }
@@ -57,6 +58,8 @@ public class Day10 : IExercise<int>
 
         int distance = 1;
         Vector2 toAdd = new();
+        char previousSign = input[(int)previous.Y][(int)previous.X];
+        List<(char PreviousSign, Vector2 Current, char Sign)> path = [(previousSign, current, sign)];
 
         while (current != startingPoint)
         {
@@ -98,7 +101,85 @@ public class Day10 : IExercise<int>
 
             previous = current;
             current += toAdd;
+            previousSign = input[(int)previous.Y][(int)previous.X];
+            path.Add((previousSign, current, sign));
         }
+
+        // find square
+        char[] breakablePipes = [
+            Pipe.NW,
+            Pipe.SW,
+            Pipe.SE,
+            Pipe.NE];
+
+        (char Previous, Vector2 Current, char Sign) firstBreak = (new(), new(), ' ');
+        for (int i = 0; i < path.Count; i++)
+        {
+            var currentSign = path[i].Sign;
+            previousSign = path[i - 1].Sign;
+
+            if (currentSign.In(breakablePipes)) {
+                firstBreak = (previousSign, path[i].Current, path[i].Sign);
+            }
+        }
+
+        var test = path
+            .Where(x => x.Sign.In(breakablePipes))
+            .ToList();
+
+        char nextToSearch = firstBreak switch
+        {
+            // J -> 7 -> F
+            { Previous: Pipe.SE, Sign: Pipe.SW } => Pipe.NW,
+            // F -> 7 -> J
+            { Previous: Pipe.NE, Sign: Pipe.SW } => Pipe.NW,
+
+            // F -> L -> J
+            { Previous: Pipe.SE, Sign: Pipe.NE } => Pipe.NW,
+            // J -> L -> F
+            { Previous: Pipe.NW, Sign: Pipe.NE } => Pipe.SE,
+
+            // 7 -> F -> L
+            { Previous: Pipe.SW, Sign: Pipe.SE } => Pipe.NE,
+            // L -> F -> 7
+            { Previous: Pipe.NE, Sign: Pipe.SE } => Pipe.SW,
+
+            // 7 -> J -> L
+            { Previous: Pipe.SW, Sign: Pipe.NW } => Pipe.NE,
+            // L -> J -> 7
+            { Previous: Pipe.NE, Sign: Pipe.NW } => Pipe.SW,
+
+            _ => 'N'
+        };
+        
+
+        //Console.Clear();
+        //Console.SetCursorPosition((int)startingPoint.X, (int)startingPoint.Y);
+        //Console.Write('S');
+        //// TODO: How to crack this with breakable points?
+        //path.Where(vector =>
+        //    {
+        //        char sign = input[(int)vector.Y][(int)vector.X];
+        //        return sign.In(breakablePipes);
+        //    })
+        //    .Do(vector =>
+        //    {
+        //        Console.SetCursorPosition((int)vector.X, (int)vector.Y);
+        //        char sign = input[(int)vector.Y][(int)vector.X];
+        //        Console.Write(sign);
+        //    });
+
+        //for (int i = 0; i < path.Count; i++)
+        //{
+        //    var currentNode = path[i];
+        //    char currentSign = input[(int)currentNode.Y][(int)currentNode.X];
+
+        //    if (currentSign.In(breakablePipes))
+        //    {
+
+        //    }
+        //}
+        Console.SetCursorPosition(0, 20);
 
         return distance / 2;
     }
@@ -113,7 +194,7 @@ public class Day10 : IExercise<int>
         public const char SE = 'F';
 
         public static char[] GetAll() => typeof(Pipe)
-            .GetFields(BindingFlags.Public)
+            .GetFields(BindingFlags.Public | BindingFlags.Static)
             .Select(x => x.GetValue(null))
             .Cast<char>()
             .ToArray();
@@ -138,9 +219,21 @@ public class Day10 : IExercise<int>
             _innerMap[value] = this;
         }
 
-        public static Vector2[] GetOffsets() => 
+        public static Vector2[] GetOffsets() =>
             _innerMap.Values.Select(x => x.Vector).ToArray();
 
         public static implicit operator Vector2(Direction dir) => dir.Vector;
+    }
+}
+
+public static class EnumerableExtensions
+{
+    public static bool In<T>(this T value, IEnumerable<T> listToCheck) => listToCheck.Contains(value);
+    public static void Do<T>(this IEnumerable<T> source, Action<T> callback)
+    {
+        foreach (var item in source)
+        {
+            callback(item);
+        }
     }
 }
