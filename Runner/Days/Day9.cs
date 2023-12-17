@@ -25,10 +25,13 @@ internal class Day9 : IExercise<int>
                 temp.Clear();
             }
 
-            // This might not be accurate in every case
-            int final = mainInterpolations
-                .Select(x => x[^1])
-                .Sum();
+            int toRemove = 0;
+            for (int i = mainInterpolations.Count - 1; i > 0; i--)
+            {
+                toRemove = mainInterpolations[i][0] - toRemove;
+            }
+
+            int final = mainInterpolations[0][0] - toRemove;
 
             sum += final;
         }
