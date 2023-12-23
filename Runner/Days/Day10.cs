@@ -225,15 +225,3 @@ public class Day10 : IExercise<int>
         public static implicit operator Vector2(Direction dir) => dir.Vector;
     }
 }
-
-public static class EnumerableExtensions
-{
-    public static bool In<T>(this T value, IEnumerable<T> listToCheck) => listToCheck.Contains(value);
-    public static void Do<T>(this IEnumerable<T> source, Action<T> callback)
-    {
-        foreach (var item in source)
-        {
-            callback(item);
-        }
-    }
-}
